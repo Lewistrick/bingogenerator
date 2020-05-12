@@ -7,27 +7,26 @@ SQSIZE = 60
 SPACING = 15
 
 def make_col(start, end, n=5):
-    """Maak een kolom met getallen."""
+    """Create a column of numbers."""
     nums = np.random.choice(np.arange(start, end+1), size=n, replace=False)
     return nums
 
 def generate_card():
-    """Maak een bingokaart en sla 'm als afbeelding op."""
+    """Create a bingo card and save it as PNG image."""
 
-    # Maak 5 kolommen
+    # Create five columns
     cols = np.array([make_col(15*i + 1, 15*i + 15) for i in range(5)])
 
-    # Vervang het middelste element door de mediaan van de middelste kolom
-    # zodat die in het midden eindigt als je de kolom sorteert
+    # Replace the center cell by the median of the first column
+    # so that it ends up in the middle when sorting the columns
     cols[2, 2] = np.median(np.r_[
         cols[2, :2],
         cols[2, 3:]
     ])
 
-    # Sorteer de kolommen
+    # Sort the columns
     rows = np.sort(cols.T, axis=0)
     rows[2, 2] = -1
-
     cols = rows.T
 
     # Create the bingo image and fill the background with a light color
@@ -39,40 +38,42 @@ def generate_card():
 
     draw = ImageDraw.Draw(img)
     topfont = ImageFont.truetype(r"C:\Windows\Fonts\CALIST.TTF", size=int(SQSIZE * 0.75))
+    numfont = ImageFont.truetype(r"C:\Windows\Fonts\CALIST.TTF", size=SQSIZE // 2)
 
     for rowidx in range(5):
-        # Toon een letter van BINGO bovenaan
+        # Show one letter from 'BINGO' at the top of the column
         x0 = SPACING + SQSIZE // 4 + (SPACING + SQSIZE) * rowidx
         y0 = SPACING
         draw.text((x0, y0), "BINGO"[rowidx], font=topfont, fill=textcolor)
 
         for colidx in range(5):
-            # Maak een vierkantje
+            # Create a square to put the number in
             x0 = SPACING + (SPACING + SQSIZE) * rowidx
             y0 = SPACING + (SPACING + SQSIZE) * (colidx + 1)
             x1 = x0 + SQSIZE
             y1 = y0 + SQSIZE
             draw.rectangle([x0, y0, x1, y1], outline=(0, 0, 0))
 
-            # Toon het getal
+            # Create the text for the number
             text = str(rows[colidx, rowidx])
-            font = ImageFont.truetype(r"C:\Windows\Fonts\CALIST.TTF", size=SQSIZE // 2)
             textcoords = (x0+SPACING, y0+SPACING)
 
-            # Centreer getallen kleiner dan 10
+            # For single-digit numbers, move the text to center it
             if rows[colidx, rowidx] < 10:
                 textcoords = (x0 + int(SPACING * 1.5), y0 + SPACING)
 
-            # Voor het middelste vakje: andere tekst, andere grootte
+            font = numfont
+
+            # For the center box: other text and font size
             if rowidx == colidx == 2:
                 text = "BONUS"
                 font = ImageFont.truetype(r"C:\Windows\Fonts\CALIST.TTF", size=SQSIZE // 5)
                 textcoords = (x0 + SPACING // 2 + 1, y0 + int(SPACING * 1.5))
 
-            # Zet de tekst op de afbeelding
-            draw.text(textcoords, text, font=font, fill=textcolor)
+            # Put the number in the square
+            draw.text(textcoords, text, font=numfont, fill=textcolor)
 
-    # Maak een bestandsnaam met volgnr
+    # Create a filename with a number that doesn't exist yet
     bingodir = Path(__file__).parent
     volgnr = 0
     while True:
@@ -81,7 +82,9 @@ def generate_card():
             break
         volgnr += 1
 
+    # Finally, save the image
     img.save(fn)
+
 
 if __name__ == "__main__":
     for _ in tqdm(range(150)):
